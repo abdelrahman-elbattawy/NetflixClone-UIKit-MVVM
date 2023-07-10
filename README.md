@@ -1,4 +1,3 @@
-# NetflixClone-UIKit-MVVM
 # Netflix Clone
 
 
