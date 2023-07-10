@@ -8,12 +8,12 @@
 import UIKit
 
 class UpcomingViewController: UIViewController {
-
+    
     //MARK: - Properties
     private var titles: [Title] = [Title]()
     
     private let upcomingFeedTable: UITableView = {
-       let tableView = UITableView()
+        let tableView = UITableView()
         tableView.register(TitleTableViewCell.self, forCellReuseIdentifier: TitleTableViewCell.identifier)
         return tableView
     }()
@@ -38,6 +38,7 @@ class UpcomingViewController: UIViewController {
         title = "Upcoming"
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationController?.navigationItem.largeTitleDisplayMode = .always
+        navigationController?.navigationBar.tintColor = .white
         
         view.addSubview(upcomingFeedTable)
         upcomingFeedTable.dataSource = self
@@ -87,5 +88,30 @@ extension UpcomingViewController: UITableViewDelegate, UITableViewDataSource {
         let offest = defaultOffest + scrollView.contentOffset.y
         
         navigationController?.navigationBar.transform = .init(translationX: 0, y: min(0, -offest))
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        let title = titles[indexPath.row]
+        guard let titleName = title.original_name ?? title.original_title else {return}
+        guard let titleOverview = title.overview else {return}
+        
+        APICaller.shared.getMovie(with: titleName) { results in
+            switch results {
+            case .success(let videoElement):
+                DispatchQueue.main.async { [weak self] in
+                    
+                    let viewModel = TitlePreviewModelView(titleName: titleName, titleOverview: titleOverview, videoElement: videoElement)
+                    let vc = TitlePreviewViewController()
+                    vc.configue(with: viewModel)
+                    self?.navigationController?.pushViewController(vc, animated: true)
+                    
+                }
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
     }
 }

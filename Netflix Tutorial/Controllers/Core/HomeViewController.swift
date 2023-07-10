@@ -12,6 +12,8 @@ class HomeViewController: UIViewController {
     //MARK: - Properties
     let sectionTitles: [String] = ["Trending Movies", "Trending Tv", "Popular", "Upcoming Movies", "Top Rated"]
     
+    private var headerView: HeroHeaderUIView?
+    
     private let homeFeedTable: UITableView = {
         let tableView = UITableView(frame: .zero, style: .grouped)
         tableView.register(CollectionViewsTableViewCell.self, forCellReuseIdentifier: CollectionViewsTableViewCell.identifier)
@@ -24,9 +26,7 @@ class HomeViewController: UIViewController {
         
         setupUI()
         configureNavBar()
-        
-        let headerView = HeroHeaderUIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 450))
-        homeFeedTable.tableHeaderView = headerView
+        configureHeroHeaderView()        
     }
     
     override func viewDidLayoutSubviews() {
@@ -42,7 +42,7 @@ class HomeViewController: UIViewController {
         view.addSubview(homeFeedTable)
         
         homeFeedTable.dataSource = self
-        homeFeedTable.delegate = self
+        homeFeedTable.delegate = self        
     }
     
     private func configureNavBar() {
@@ -56,6 +56,29 @@ class HomeViewController: UIViewController {
         ]
         
         navigationController?.navigationBar.tintColor = .white
+    }
+    
+    private func configureHeroHeaderView() {
+        headerView = HeroHeaderUIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 450))
+        homeFeedTable.tableHeaderView = headerView
+        
+        APICaller.shared.getTrendingMovies { results in
+            switch results {
+            case .success(let titles):
+                
+                DispatchQueue.main.async { [weak self] in
+                    
+                    let randomTitle = titles.randomElement()
+                    guard let titleName = randomTitle?.original_name ?? randomTitle?.original_title else {return}
+                    guard let posterPath = randomTitle?.poster_path else {return}
+                    let viewModel = TitleModelView(titleName: titleName, posterPath: posterPath)
+                    self?.headerView?.configure(with: viewModel)
+                }
+            
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
     }
 }
 
@@ -75,6 +98,8 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CollectionViewsTableViewCell.identifier, for: indexPath) as? CollectionViewsTableViewCell else {
             return UITableViewCell()
         }
+        
+        cell.delegate = self
         
         switch(indexPath.section) {
         case sections.TrendingMovies.rawValue:
@@ -163,3 +188,17 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
     }
 }
 
+//MARK: - Protocol Extension
+extension HomeViewController: CollectionViewsTableViewCellDelegate {
+    
+    
+    func collectionViewsTableViewCellDidTapCell(_ cell: CollectionViewsTableViewCell, viewModel: TitlePreviewModelView) {
+        
+        DispatchQueue.main.async { [weak self] in
+            let vc = TitlePreviewViewController()
+            vc.configue(with: viewModel)
+            self?.navigationController?.pushViewController(vc, animated: true)
+        }
+        
+    }
+}

@@ -8,14 +8,21 @@
 import UIKit
 
 class SearchViewController: UIViewController {
-
+    
     //MARK: - Properties
     private var titles: [Title] = [Title]()
     
     private let discoverFeedTable: UITableView = {
-       let tableView = UITableView()
+        let tableView = UITableView()
         tableView.register(TitleTableViewCell.self, forCellReuseIdentifier: TitleTableViewCell.identifier)
         return tableView
+    }()
+    
+    private let searchResultsController: UISearchController = {
+        let controller = UISearchController(searchResultsController: SearhResultsViewController())
+        controller.searchBar.placeholder = "Search for a Movie or a Tv show"
+        controller.searchBar.searchBarStyle = .minimal
+        return controller
     }()
     
     //MARK: - Lifecycle
@@ -43,6 +50,11 @@ class SearchViewController: UIViewController {
         view.addSubview(discoverFeedTable)
         discoverFeedTable.dataSource = self
         discoverFeedTable.delegate = self
+        
+        navigationItem.searchController = searchResultsController
+        navigationController?.navigationBar.tintColor = .white
+        
+        searchResultsController.searchResultsUpdater = self
     }
     
     private func fetchDiscoverMovies() {
@@ -61,7 +73,7 @@ class SearchViewController: UIViewController {
     }
 }
 
-//MARK: - Extensions
+//MARK: - TableView Extension
 extension SearchViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return titles.count
@@ -89,5 +101,65 @@ extension SearchViewController: UITableViewDataSource, UITableViewDelegate {
         let offest = defaultOffest + scrollView.contentOffset.y
         
         navigationController?.navigationBar.transform = .init(translationX: 0, y: min(0, -offest))
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+
+        let title = titles[indexPath.row]
+        guard let titleName = title.original_name ?? title.original_title else {return}
+        guard let titleOverview = title.overview else {return}
+        
+        APICaller.shared.getMovie(with: titleName) { results in
+            switch results {
+            case .success(let videoElement):
+                DispatchQueue.main.async { [weak self] in
+                    
+                    let viewModel = TitlePreviewModelView(titleName: titleName, titleOverview: titleOverview, videoElement: videoElement)
+                    let vc = TitlePreviewViewController()
+                    vc.configue(with: viewModel)
+                    self?.navigationController?.pushViewController(vc, animated: true)
+                    
+                }
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
+    }
+}
+
+//MARK: - SearchController Extention
+extension SearchViewController: UISearchResultsUpdating, SearhResultsViewControllerDelegate {
+    
+    func updateSearchResults(for searchController: UISearchController) {
+        let searchBar = searchController.searchBar
+        guard let query = searchBar.text,
+              !query.trimmingCharacters(in: .whitespaces).isEmpty,
+              query.trimmingCharacters(in: .whitespaces).count >= 3,
+              let resultController = searchController.searchResultsController as? SearhResultsViewController else {return}
+        
+        resultController.delegate = self
+        
+        APICaller.shared.search(with: query) { results in
+            switch (results) {
+            case .success(let titles):
+                DispatchQueue.main.async {
+                    resultController.titles = titles
+                    resultController.resultsCollectionView.reloadData()
+                }
+                
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
+    }
+    
+    func searhResultsViewControllerDidTapItem(with model: TitlePreviewModelView) {
+        DispatchQueue.main.async { [weak self] in
+            let vc = TitlePreviewViewController()
+            vc.configue(with: model)
+            self?.navigationController?.pushViewController(vc, animated: true)
+        }
     }
 }

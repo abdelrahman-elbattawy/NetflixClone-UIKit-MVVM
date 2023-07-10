@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+struct TitleModelView {
+    let titleName: String
+    let posterPath: String
+}

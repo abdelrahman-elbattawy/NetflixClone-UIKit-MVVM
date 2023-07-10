@@ -6,3 +6,9 @@
 //
 
 import Foundation
+
+struct TitlePreviewModelView {
+    let titleName: String
+    let titleOverview: String
+    let videoElement: VideoElement
+}
