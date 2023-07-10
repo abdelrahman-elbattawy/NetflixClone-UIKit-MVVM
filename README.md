@@ -58,5 +58,4 @@ struct Constants{
   <img width="300" height="650" src="https://github.com/abdoelbattawy/NetflixClone-UIKit-MVVM/blob/main/Netflix%20Tutorial/ScreenShots/7.png">
     <img width="300" height="650" src="https://github.com/abdoelbattawy/NetflixClone-UIKit-MVVM/blob/main/Netflix%20Tutorial/ScreenShots/8.png">
     <img width="300" height="650" src="https://github.com/abdoelbattawy/NetflixClone-UIKit-MVVM/blob/main/Netflix%20Tutorial/ScreenShots/9.png">
-    <img width="300" height="650" src="https://github.com/abdoelbattawy/NetflixClone-UIKit-MVVM/blob/main/Netflix%20Tutorial/ScreenShots/10.png">
 </p>
